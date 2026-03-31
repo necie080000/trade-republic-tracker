@@ -14,17 +14,88 @@
         .profit { color: #00d4aa; }
         .loss { color: #ff4444; }
         button { background: #00d4aa; color: black; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; margin: 5px; }
-        input { background: #16213e; color: white; border: 1px solid #333; padding: 8px; border-radius: 5px; margin: 5px; }
+        input { background: #16213e; color: white; border: 1px solid #333; padding: 8px; border-radius: 5px; margin: 5px; width: 150px; }
     </style>
 </head>
 <body>
     <h1>📈 Trade Republic Tracker</h1>
-    
     <div>
         <input type="text" id="nom" placeholder="Nom du titre">
         <input type="number" id="quantite" placeholder="Quantité">
-        <input type="number" id="prixAchat" placeholder="Prix d'achat €">
+        <input type="number" id="prixAchat" placeholder="Prix achat €">
         <input type="number" id="prixActuel" placeholder="Prix actuel €">
         <button onclick="ajouterTitre()">Ajouter</button>
     </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Titre</th>
+                <th>Quantité</th>
+                <th>Prix achat</th>
+                <th>Prix actuel</th>
+                <th>+/- Value</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="tableau"></tbody>
+    </table>
+    <div id="total" style="margin-top:20px; font-size:1.2em;"></div>
 
+    <script>
+        let titres = JSON.parse(localStorage.getItem('titres')) || [];
+
+        function afficher() {
+            const tbody = document.getElementById('tableau');
+            tbody.innerHTML = '';
+            let totalInvesti = 0;
+            let totalActuel = 0;
+
+            titres.forEach((t, i) => {
+                const valeurAchat = t.quantite * t.prixAchat;
+                const valeurActuelle = t.quantite * t.prixActuel;
+                const plusValue = valeurActuelle - valeurAchat;
+                const pct = ((plusValue / valeurAchat) * 100).toFixed(2);
+                totalInvesti += valeurAchat;
+                totalActuel += valeurActuelle;
+
+                const classe = plusValue >= 0 ? 'profit' : 'loss';
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${t.nom}</td>
+                        <td>${t.quantite}</td>
+                        <td>${t.prixAchat} €</td>
+                        <td>${t.prixActuel} €</td>
+                        <td class="${classe}">${plusValue.toFixed(2)} € (${pct}%)</td>
+                        <td><button onclick="supprimer(${i})">🗑️</button></td>
+                    </tr>`;
+            });
+
+            const totalPV = totalActuel - totalInvesti;
+            const classe = totalPV >= 0 ? 'profit' : 'loss';
+            document.getElementById('total').innerHTML = `
+                <span>Investi : ${totalInvesti.toFixed(2)} € | 
+                Actuel : ${totalActuel.toFixed(2)} € | 
+                <span class="${classe}">Total +/- : ${totalPV.toFixed(2)} €</span></span>`;
+        }
+
+        function ajouterTitre() {
+            const nom = document.getElementById('nom').value;
+            const quantite = parseFloat(document.getElementById('quantite').value);
+            const prixAchat = parseFloat(document.getElementById('prixAchat').value);
+            const prixActuel = parseFloat(document.getElementById('prixActuel').value);
+            if (!nom || !quantite || !prixAchat || !prixActuel) return alert('Remplissez tous les champs !');
+            titres.push({ nom, quantite, prixAchat, prixActuel });
+            localStorage.setItem('titres', JSON.stringify(titres));
+            afficher();
+        }
+
+        function supprimer(i) {
+            titres.splice(i, 1);
+            localStorage.setItem('titres', JSON.stringify(titres));
+            afficher();
+        }
+
+        afficher();
+    </script>
+</body>
+</html>
